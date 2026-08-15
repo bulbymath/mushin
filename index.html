@@ -265,6 +265,8 @@
             onBack={() => setView('dashboard')} 
             enabledSources={enabledSources}
             onToggleSource={toggleSourceCategory}
+            onClearToday={() => setTodayLogs([])}
+            onClearHistory={() => setHistory([])}
           />
         );
       }
@@ -385,12 +387,16 @@
       return null;
     }
 
-    // --- SETTINGS SCREEN SUB-COMPONENT WITH EXPORT & IMPORT ---
-    function SettingsScreen({ onBack, enabledSources, onToggleSource }) {
+    // --- SETTINGS SCREEN SUB-COMPONENT WITH EXPORT, IMPORT & RESET ---
+    function SettingsScreen({ onBack, enabledSources, onToggleSource, onClearToday, onClearHistory }) {
       const [exportText, setExportText] = useState('');
       const [importInput, setImportInput] = useState('');
       const [copied, setCopied] = useState(false);
       const [statusMsg, setStatusMsg] = useState(null);
+
+      const [confirmClearToday, setConfirmClearToday] = useState(false);
+      const [confirmClearHistory, setConfirmClearHistory] = useState(false);
+      const [confirmFullReset, setConfirmFullReset] = useState(false);
 
       const handleGenerateExport = () => {
         const payload = {
@@ -425,6 +431,14 @@
         }
       };
 
+      const handleFactoryReset = () => {
+        localStorage.removeItem('mushin_today');
+        localStorage.removeItem('mushin_history');
+        localStorage.removeItem('mushin_enabled_sources');
+        localStorage.removeItem('mushin_tutorial');
+        window.location.reload();
+      };
+
       return (
         <div className="min-h-screen bg-neutral-950 text-neutral-200 p-6 flex flex-col font-sans lowercase animate-in fade-in duration-500 overflow-y-auto">
           <div className="flex items-center mb-8 pt-4">
@@ -435,6 +449,12 @@
           </div>
 
           <div className="flex-1 max-w-md mx-auto w-full space-y-8 pb-12">
+            {statusMsg && (
+              <div className={`p-4 rounded-xl border text-center text-sm ${statusMsg.type === 'success' ? 'bg-teal-950/50 border-teal-900/50 text-teal-400' : 'bg-rose-950/50 border-rose-900/50 text-rose-400'}`}>
+                {statusMsg.text}
+              </div>
+            )}
+
             <div>
               <h3 className="text-sm font-medium text-white mb-2">quote sources</h3>
               <p className="text-xs text-neutral-400 font-light mb-4">
@@ -500,11 +520,47 @@
                     import & overwrite data
                   </button>
                 </div>
+              </div>
+            </div>
 
-                {statusMsg && (
-                  <p className={`text-xs text-center ${statusMsg.type === 'success' ? 'text-teal-400' : 'text-rose-400'}`}>
-                    {statusMsg.text}
-                  </p>
+            <div className="pt-6 border-t border-neutral-800">
+              <h3 className="text-sm font-medium text-white mb-2">danger zone</h3>
+              <p className="text-xs text-neutral-400 font-light mb-4">
+                permanently delete your data. this cannot be undone.
+              </p>
+
+              <div className="space-y-3">
+                {confirmClearToday ? (
+                  <div className="flex gap-2">
+                    <button onClick={() => setConfirmClearToday(false)} className="flex-1 py-3 rounded-xl bg-neutral-900 text-neutral-400 text-xs hover:text-white transition-colors">cancel</button>
+                    <button onClick={() => { onClearToday(); setConfirmClearToday(false); setStatusMsg({type: 'success', text: "today's logs cleared."}); }} className="flex-1 py-3 rounded-xl bg-rose-900/50 text-rose-200 text-xs hover:bg-rose-900/70 transition-colors">confirm delete today</button>
+                  </div>
+                ) : (
+                  <button onClick={() => setConfirmClearToday(true)} className="w-full py-3 rounded-xl border border-rose-900/30 text-rose-400 text-xs hover:bg-rose-950/20 transition-colors">
+                    clear today's logs
+                  </button>
+                )}
+
+                {confirmClearHistory ? (
+                  <div className="flex gap-2">
+                    <button onClick={() => setConfirmClearHistory(false)} className="flex-1 py-3 rounded-xl bg-neutral-900 text-neutral-400 text-xs hover:text-white transition-colors">cancel</button>
+                    <button onClick={() => { onClearHistory(); setConfirmClearHistory(false); setStatusMsg({type: 'success', text: "history cleared."}); }} className="flex-1 py-3 rounded-xl bg-rose-900/50 text-rose-200 text-xs hover:bg-rose-900/70 transition-colors">confirm delete history</button>
+                  </div>
+                ) : (
+                  <button onClick={() => setConfirmClearHistory(true)} className="w-full py-3 rounded-xl border border-rose-900/30 text-rose-400 text-xs hover:bg-rose-950/20 transition-colors">
+                    clear all history
+                  </button>
+                )}
+
+                {confirmFullReset ? (
+                  <div className="flex gap-2">
+                    <button onClick={() => setConfirmFullReset(false)} className="flex-1 py-3 rounded-xl bg-neutral-900 text-neutral-400 text-xs hover:text-white transition-colors">cancel</button>
+                    <button onClick={handleFactoryReset} className="flex-1 py-3 rounded-xl bg-red-600 text-white font-medium text-xs shadow-[0_0_15px_rgba(220,38,38,0.4)] hover:bg-red-500 transition-colors">confirm factory reset</button>
+                  </div>
+                ) : (
+                  <button onClick={() => setConfirmFullReset(true)} className="w-full py-3 rounded-xl border border-red-900/50 text-red-500 font-medium text-xs hover:bg-red-950/30 transition-colors">
+                    factory reset (delete everything)
+                  </button>
                 )}
               </div>
             </div>
